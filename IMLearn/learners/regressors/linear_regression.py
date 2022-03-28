@@ -49,7 +49,8 @@ class LinearRegression(BaseEstimator):
         -----
         Fits model with or without an intercept depending on value of `self.include_intercept_`
         """
-        raise NotImplementedError()
+        self.coefs_ = np.linalg.pinv(X)*y
+
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -65,8 +66,10 @@ class LinearRegression(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        raise NotImplementedError()
+        return self.coefs_ @ X
 
+    def mean_square_error(self,y_true: np.ndarray, y_pred: np.ndarray) -> float:
+        return ((y_true - y_pred) ** 2).mean(axis=0)  # by def
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
         Evaluate performance under MSE loss function
@@ -84,4 +87,4 @@ class LinearRegression(BaseEstimator):
         loss : float
             Performance under MSE loss function
         """
-        raise NotImplementedError()
+        return self.mean_square_error(X,y)
