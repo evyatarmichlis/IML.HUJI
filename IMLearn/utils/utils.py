@@ -2,39 +2,38 @@ from typing import Tuple
 import numpy as np
 import pandas as pd
 
-
 def split_train_test(X: pd.DataFrame, y: pd.Series, train_proportion: float = .25) \
         -> Tuple[pd.DataFrame, pd.Series, pd.DataFrame, pd.Series]:
     """
     Split given sample to a training- and testing sample
-
     Parameters
     ----------
     X : DataFrame of shape (n_samples, n_features)
         Data frame of samples and feature values.
-
     y : Series of shape (n_samples, )
         Responses corresponding samples in data frame.
-
     train_proportion: Fraction of samples to be split as training set
-
     Returns
     -------
     train_X : DataFrame of shape (ceil(train_proportion * n_samples), n_features)
         Design matrix of train set
-
     train_y : Series of shape (ceil(train_proportion * n_samples), )
         Responses of training samples
-
     test_X : DataFrame of shape (floor((1-train_proportion) * n_samples), n_features)
         Design matrix of test set
-
     test_y : Series of shape (floor((1-train_proportion) * n_samples), )
         Responses of test samples
-
     """
-    raise NotImplementedError()
-
+    df = pd.DataFrame(X)
+    df[y.name] = y
+    train_x = df.sample(frac=train_proportion)
+    train_y = train_x[y.name]
+    not_train_ind = ~df.index.isin(train_x.index)
+    test_x = df[not_train_ind]
+    test_y = test_x[y.name]
+    train_x.drop([y.name], axis=1, inplace=True)
+    test_x.drop([y.name], axis=1, inplace=True)
+    return train_x, train_y, test_x, test_y
 
 def confusion_matrix(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     """

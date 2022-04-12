@@ -1,9 +1,12 @@
 from __future__ import annotations
 from typing import NoReturn
+
+import IMLearn
 from ...base import BaseEstimator
 import numpy as np
 from numpy.linalg import pinv
 
+import  IMLearn.metrics.loss_functions as loss
 
 class LinearRegression(BaseEstimator):
     """
@@ -31,7 +34,8 @@ class LinearRegression(BaseEstimator):
             `LinearRegression.fit` function.
         """
         super().__init__()
-        self.include_intercept_, self.coefs_ = include_intercept, None
+        self.coefs_ = None
+        self.include_intercept_ =include_intercept
 
     def _fit(self, X: np.ndarray, y: np.ndarray) -> NoReturn:
         """
@@ -48,8 +52,16 @@ class LinearRegression(BaseEstimator):
         Notes
         -----
         Fits model with or without an intercept depending on value of `self.include_intercept_`
+
         """
-        self.coefs_ = np.linalg.pinv(X)*y
+
+        X_ = X
+        if self.include_intercept_:
+                n, m = X_.shape  # for generality
+                X0 = np.ones((n, 1))
+                X_ = np.hstack((X0, X_))
+        self.coefs_ = np.linalg.pinv(X_) @ y
+        self.fitted_ = True
 
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
@@ -66,10 +78,13 @@ class LinearRegression(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        return self.coefs_ @ X
+        if self.include_intercept_:
+            n, m = X.shape  # for generality
+            X0 = np.ones((n, 1))
+            X = np.hstack((X0, X))
+        return  X @ self.coefs_
 
-    def mean_square_error(self,y_true: np.ndarray, y_pred: np.ndarray) -> float:
-        return ((y_true - y_pred) ** 2).mean(axis=0)  # by def
+
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
         Evaluate performance under MSE loss function
@@ -87,4 +102,5 @@ class LinearRegression(BaseEstimator):
         loss : float
             Performance under MSE loss function
         """
-        return self.mean_square_error(X,y)
+        y_ =self._predict(X)
+        return loss.mean_square_error(y_,y)

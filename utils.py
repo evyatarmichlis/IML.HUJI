@@ -141,3 +141,5 @@ def create_data_bagging_utils(d = 4, number_of_members = 1, n_samples = 1000):
     samples = np.vstack([samples_["samples_of_half"] for samples_ in built_list.values()])
     tags =  np.hstack([np.repeat(samples_["tag"], samples_["samples_of_half"].shape[0]) for samples_ in built_list.values()])
     return samples, tags
+
+
