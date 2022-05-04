@@ -170,3 +170,5 @@ class BaseEstimator(ABC):
         """
         self.fit(X, y)
         return self.predict(X)
+
+
