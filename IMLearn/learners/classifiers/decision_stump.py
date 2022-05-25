@@ -27,6 +27,7 @@ class DecisionStump(BaseEstimator):
         super().__init__()
         self.threshold_, self.j_, self.sign_ = None, None, None
 
+
     def _fit(self, X: np.ndarray, y: np.ndarray) -> NoReturn:
         """
         fits a decision stump to the given data
@@ -39,7 +40,17 @@ class DecisionStump(BaseEstimator):
         y : ndarray of shape (n_samples, )
             Responses of input data to fit to
         """
-        raise NotImplementedError()
+
+        best_loss = np.inf
+        for j in range(X.shape[1]):
+            for sign in [1, -1]:
+                thr, loss = self._find_threshold(X[:, j], y, sign)
+                if loss < best_loss:
+                    best_loss = loss
+                    self.threshold_,  self.sign_,   self.j_  = thr, sign, j
+
+
+
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -49,9 +60,6 @@ class DecisionStump(BaseEstimator):
         ----------
         X : ndarray of shape (n_samples, n_features)
             Input data to predict responses for
-
-        y : ndarray of shape (n_samples, )
-            Responses of input data to fit to
 
         Returns
         -------
@@ -63,41 +71,60 @@ class DecisionStump(BaseEstimator):
         Feature values strictly below threshold are predicted as `-sign` whereas values which equal
         to or above the threshold are predicted as `sign`
         """
-        raise NotImplementedError()
+        return  (((X[:, self.j_] >= self.threshold_).astype(int))*2-1) * self.sign_
+
+
 
     def _find_threshold(self, values: np.ndarray, labels: np.ndarray, sign: int) -> Tuple[float, float]:
+        from ...metrics import misclassification_error
         """
         Given a feature vector and labels, find a threshold by which to perform a split
         The threshold is found according to the value minimizing the misclassification
         error along this feature
-
+    
         Parameters
         ----------
         values: ndarray of shape (n_samples,)
             A feature vector to find a splitting threshold for
-
+    
         labels: ndarray of shape (n_samples,)
             The labels to compare against
-
+    
         sign: int
             Predicted label assigned to values equal to or above threshold
-
+    
         Returns
         -------
         thr: float
             Threshold by which to perform split
-
+    
         thr_err: float between 0 and 1
             Misclassificaiton error of returned threshold
-
+    
         Notes
         -----
         For every tested threshold, values strictly below threshold are predicted as `-sign` whereas values
         which equal to or above the threshold are predicted as `sign`
+    
         """
-        raise NotImplementedError()
+        best_loss = np.inf
+        thr = -np.inf
+        for v in values:
+            y_pred = (values >= v).astype(int)
+            y_pred[y_pred == 1] = sign
+            y_pred[y_pred == 0] = -sign
 
-    def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
+            loss = self._loss_helper(labels, y_pred, np.abs(labels))
+            if loss < best_loss:
+                best_loss = loss
+                thr = v
+        if thr == np.min(values):
+            return -np.inf, best_loss
+        return thr, best_loss
+
+
+
+    def _loss(self, X: np.ndarray, y: np.ndarray) :
         """
         Evaluate performance under misclassification loss function
 
@@ -114,4 +141,9 @@ class DecisionStump(BaseEstimator):
         loss : float
             Performance under missclassification loss function
         """
-        raise NotImplementedError()
+        return self._loss_helper(y,  self._predict(X), np.abs(y))
+
+    def _loss_helper(self, y_true: np.ndarray, y_pred: np.ndarray, d: np.ndarray) :
+
+
+        return d @ (np.sign(y_true) != np.sign(y_pred))

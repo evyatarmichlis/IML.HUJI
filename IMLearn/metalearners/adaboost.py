@@ -1,8 +1,8 @@
 import numpy as np
-from ...base import BaseEstimator
-from typing import Callable, NoReturn
+from IMLearn import BaseEstimator
+from typing import Callable, NoReturn ,List
 
-
+from IMLearn.metrics import misclassification_error
 class AdaBoost(BaseEstimator):
     """
     AdaBoost class for boosting a specified weak learner
@@ -39,89 +39,95 @@ class AdaBoost(BaseEstimator):
     def _fit(self, X: np.ndarray, y: np.ndarray) -> NoReturn:
         """
         Fit an AdaBoost classifier over given samples
-
         Parameters
         ----------
         X : ndarray of shape (n_samples, n_features)
             Input data to fit an estimator for
-
         y : ndarray of shape (n_samples, )
             Responses of input data to fit to
         """
-        raise NotImplementedError()
+
+        self.D_ = np.ones(y.shape) / y.shape[0]  # init parameters
+        self.models_: List[BaseEstimator] = []
+        self.weights_ = np.zeros((self.iterations_))
+        for i in range(self.iterations_):
+            print(i)
+            self.models_.append(self.wl_())
+            self.models_[i].fit(X, y*self.D_)
+            y_pred = self.models_[i].predict(X)
+            epsilon = self.models_[i]._loss(X, y*self.D_)
+            print("epsilon " +str(epsilon))
+            self.weights_[i] = (0.5*np.log((1/epsilon) - 1))
+            self.D_ = (self.D_ * np.exp((-y) * self.weights_[i] * y_pred)) / np.sum( self.D_) # update sample weights
+
 
     def _predict(self, X):
         """
         Predict responses for given samples using fitted estimator
-
         Parameters
         ----------
         X : ndarray of shape (n_samples, n_features)
             Input data to predict responses for
-
         Returns
         -------
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        raise NotImplementedError()
+
+        return self.partial_predict(X, self.iterations_)
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
+
         """
         Evaluate performance under misclassification loss function
-
         Parameters
         ----------
         X : ndarray of shape (n_samples, n_features)
             Test samples
-
         y : ndarray of shape (n_samples, )
             True labels of test samples
-
         Returns
         -------
         loss : float
             Performance under missclassification loss function
         """
-        raise NotImplementedError()
+
+        return misclassification_error(y, self._predict(X))
 
     def partial_predict(self, X: np.ndarray, T: int) -> np.ndarray:
         """
         Predict responses for given samples using fitted estimators
-
         Parameters
         ----------
         X : ndarray of shape (n_samples, n_features)
             Input data to predict responses for
-
         T: int
             The number of classifiers (from 1,...,T) to be used for prediction
-
         Returns
         -------
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        raise NotImplementedError()
+        pred = []
+
+        for i in range(T):
+            pred.append(self.weights_[i] * self.models_[i].predict(X))
+        return np.sign(np.sum(pred, axis=0))
 
     def partial_loss(self, X: np.ndarray, y: np.ndarray, T: int) -> float:
         """
         Evaluate performance under misclassification loss function
-
         Parameters
         ----------
         X : ndarray of shape (n_samples, n_features)
             Test samples
-
         y : ndarray of shape (n_samples, )
             True labels of test samples
-
         T: int
             The number of classifiers (from 1,...,T) to be used for prediction
-
         Returns
         -------
         loss : float
             Performance under missclassification loss function
         """
-        raise NotImplementedError()
+        return misclassification_error(y, self.partial_predict(X, T))
