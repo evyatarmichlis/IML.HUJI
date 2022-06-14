@@ -5,6 +5,14 @@ import numpy as np
 from IMLearn import BaseEstimator
 
 
+
+def split_data(i,X,y,k):
+    range_x = np.arange(X.shape[0])
+    separator = np.remainder(range_x, k)
+    x_1,x_2 = X[separator == i] , X[separator != i]
+    y_1,y_2 = y[separator == i] , y[separator != i]
+    return x_1,x_2 , y_1,y_2
+
 def cross_validate(estimator: BaseEstimator, X: np.ndarray, y: np.ndarray,
                    scoring: Callable[[np.ndarray, np.ndarray, ...], float], cv: int = 5) -> Tuple[float, float]:
     """
@@ -37,4 +45,16 @@ def cross_validate(estimator: BaseEstimator, X: np.ndarray, y: np.ndarray,
     validation_score: float
         Average validation score over folds
     """
-    raise NotImplementedError()
+
+    val_score = []
+    train_score = []
+    for i in range(cv):
+        x_1,x_2 , y_1,y_2 = split_data(i,X,y,cv)
+        h_i = estimator.fit(x_2,y_2)
+        val_score.append(scoring(y_1, h_i.predict(x_1)  ))
+        train_score.append(scoring(y_2, h_i.predict(x_2) ))
+
+    return np.array(val_score).mean(), np.array(train_score).mean()
+
+
+

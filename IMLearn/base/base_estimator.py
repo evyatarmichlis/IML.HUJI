@@ -97,6 +97,8 @@ class BaseEstimator(ABC):
         """
         if not self.fitted_:
             raise ValueError("Estimator must first be fitted before calling ``loss``")
+
+
         return self._loss(X, y)
 
     @abstractmethod
